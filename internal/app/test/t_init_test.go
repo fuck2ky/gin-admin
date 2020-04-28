@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/LyricTian/gin-admin/internal/app"
 	"github.com/LyricTian/gin-admin/internal/app/config"
+	"github.com/LyricTian/gin-admin/internal/app/initialize"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,20 +24,27 @@ var engine *gin.Engine
 
 func init() {
 	// 初始化配置文件
-	err := config.LoadGlobal(configFile)
+	config.MustLoad(configFile)
+
+	config.C.RunMode = "test"
+	config.C.Log.Level = 2
+	config.C.JWTAuth.Enable = false
+	config.C.Casbin.Enable = false
+	config.C.Casbin.Model = modelFile
+	config.C.Gorm.Debug = false
+	config.C.Gorm.DBType = "sqlite3"
+
+	initialize.InitLogger()
+	injector, _, err := initialize.BuildInjector()
 	if err != nil {
 		panic(err)
 	}
+	engine = injector.Engine
+}
 
-	cfg := config.Global()
-	cfg.RunMode = "debug"
-	cfg.Casbin.Enable = true
-	cfg.Casbin.Model = modelFile
-	cfg.Gorm.Debug = false
-	cfg.Gorm.DBType = "sqlite3"
-
-	container, _ := app.BuildContainer()
-	engine = app.InitWeb(container)
+// ResRecordID 响应记录ID
+type ResRecordID struct {
+	RecordID string `json:"record_id,omitempty"`
 }
 
 func toReader(v interface{}) io.Reader {
@@ -95,8 +102,8 @@ func parsePageReader(r io.Reader, v interface{}) error {
 	return parseReader(r, result)
 }
 
-func newPostRequest(router string, v interface{}) *http.Request {
-	req, _ := http.NewRequest("POST", router, toReader(v))
+func newPostRequest(formatRouter string, v interface{}, args ...interface{}) *http.Request {
+	req, _ := http.NewRequest("POST", fmt.Sprintf(formatRouter, args...), toReader(v))
 	return req
 }
 

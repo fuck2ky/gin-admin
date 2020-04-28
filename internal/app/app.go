@@ -3,20 +3,24 @@ package app
 import (
 	"context"
 	"os"
+	"os/signal"
+	"sync/atomic"
+	"syscall"
+	"time"
 
-	"github.com/LyricTian/gin-admin/internal/app/bll/impl"
 	"github.com/LyricTian/gin-admin/internal/app/config"
-	"github.com/LyricTian/gin-admin/pkg/auth"
+	"github.com/LyricTian/gin-admin/internal/app/initialize"
 	"github.com/LyricTian/gin-admin/pkg/logger"
-	"go.uber.org/dig"
+
+	// 引入swagger
+	_ "github.com/LyricTian/gin-admin/internal/app/swagger"
 )
 
 type options struct {
 	ConfigFile string
 	ModelFile  string
-	WWWDir     string
-	SwaggerDir string
 	MenuFile   string
+	WWWDir     string
 	Version    string
 }
 
@@ -44,13 +48,6 @@ func SetWWWDir(s string) Option {
 	}
 }
 
-// SetSwaggerDir 设定swagger目录
-func SetSwaggerDir(s string) Option {
-	return func(o *options) {
-		o.SwaggerDir = s
-	}
-}
-
 // SetMenuFile 设定菜单数据文件
 func SetMenuFile(s string) Option {
 	return func(o *options) {
@@ -65,108 +62,87 @@ func SetVersion(s string) Option {
 	}
 }
 
-func handleError(err error) {
+// Run 运行服务
+func Run(ctx context.Context, opts ...Option) error {
+	var state int32 = 1
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	cleanFunc, err := Init(ctx, opts...)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+EXIT:
+	for {
+		sig := <-sc
+		logger.Printf(ctx, "接收到信号[%s]", sig.String())
+		switch sig {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			atomic.CompareAndSwapInt32(&state, 1, 0)
+			break EXIT
+		case syscall.SIGHUP:
+		default:
+			break EXIT
+		}
+	}
+
+	cleanFunc()
+	logger.Printf(ctx, "服务退出")
+	time.Sleep(time.Second)
+	os.Exit(int(atomic.LoadInt32(&state)))
+	return nil
 }
 
 // Init 应用初始化
-func Init(ctx context.Context, opts ...Option) func() {
+func Init(ctx context.Context, opts ...Option) (func(), error) {
 	var o options
 	for _, opt := range opts {
 		opt(&o)
 	}
-	err := config.LoadGlobal(o.ConfigFile)
-	handleError(err)
 
-	cfg := config.Global()
-
-	logger.Printf(ctx, "服务启动，运行模式：%s，版本号：%s，进程号：%d", cfg.RunMode, o.Version, os.Getpid())
-
+	config.MustLoad(o.ConfigFile)
 	if v := o.ModelFile; v != "" {
-		cfg.Casbin.Model = v
+		config.C.Casbin.Model = v
 	}
 	if v := o.WWWDir; v != "" {
-		cfg.WWW = v
-	}
-	if v := o.SwaggerDir; v != "" {
-		cfg.Swagger = v
+		config.C.WWW = v
 	}
 	if v := o.MenuFile; v != "" {
-		cfg.Menu.Data = v
+		config.C.Menu.Data = v
 	}
+	config.PrintWithJSON()
 
-	loggerCall, err := InitLogger()
-	handleError(err)
+	logger.Printf(ctx, "服务启动，运行模式：%s，版本号：%s，进程号：%d", config.C.RunMode, o.Version, os.Getpid())
 
-	err = InitMonitor()
+	// 初始化日志模块
+	loggerCleanFunc, err := initialize.InitLogger()
 	if err != nil {
-		logger.Errorf(ctx, err.Error())
+		return nil, err
 	}
 
+	// 初始化服务运行监控
+	initialize.InitMonitor(ctx)
 	// 初始化图形验证码
-	InitCaptcha()
+	initialize.InitCaptcha()
 
-	// 创建依赖注入容器
-	container, containerCall := BuildContainer()
+	// 初始化依赖注入器
+	injector, injectorCleanFunc, err := initialize.BuildInjector()
+	if err != nil {
+		return nil, err
+	}
 
-	// 初始化数据
-	err = InitData(ctx, container)
-	handleError(err)
+	// 初始化菜单数据
+	err = injector.Menu.Load()
+	if err != nil {
+		return nil, err
+	}
 
 	// 初始化HTTP服务
-	httpCall := InitHTTPServer(ctx, container)
+	httpServerCleanFunc := initialize.InitHTTPServer(ctx, injector.Engine)
+
 	return func() {
-		if httpCall != nil {
-			httpCall()
-		}
-		if containerCall != nil {
-			containerCall()
-		}
-		if loggerCall != nil {
-			loggerCall()
-		}
-	}
-}
-
-// BuildContainer 创建依赖注入容器
-func BuildContainer() (*dig.Container, func()) {
-	// 创建依赖注入容器
-	container := dig.New()
-
-	// 注入认证模块
-	auther, err := InitAuth()
-	handleError(err)
-	_ = container.Provide(func() auth.Auther {
-		return auther
-	})
-
-	// 注入casbin
-	_ = container.Provide(NewCasbinEnforcer)
-
-	// 注入存储模块
-	storeCall, err := InitStore(container)
-	handleError(err)
-
-	// 注入bll
-	err = impl.Inject(container)
-	handleError(err)
-
-	// 初始化casbin
-	err = InitCasbinEnforcer(container)
-	handleError(err)
-
-	return container, func() {
-		if auther != nil {
-			_ = auther.Release()
-		}
-
-		// 释放资源
-		ReleaseCasbinEnforcer(container)
-
-		if storeCall != nil {
-			storeCall()
-		}
-	}
+		httpServerCleanFunc()
+		injectorCleanFunc()
+		loggerCleanFunc()
+	}, nil
 }
