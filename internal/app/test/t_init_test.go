@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/LyricTian/gin-admin/internal/app/config"
-	"github.com/LyricTian/gin-admin/internal/app/initialize"
+	"github.com/LyricTian/gin-admin/v6/internal/app/config"
+	"github.com/LyricTian/gin-admin/v6/internal/app/injector"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,17 +34,16 @@ func init() {
 	config.C.Gorm.Debug = false
 	config.C.Gorm.DBType = "sqlite3"
 
-	initialize.InitLogger()
-	injector, _, err := initialize.BuildInjector()
+	injector, _, err := injector.BuildInjector()
 	if err != nil {
 		panic(err)
 	}
 	engine = injector.Engine
 }
 
-// ResRecordID 响应记录ID
-type ResRecordID struct {
-	RecordID string `json:"record_id,omitempty"`
+// ResID 响应唯一标识
+type ResID struct {
+	ID string `json:"id,omitempty"`
 }
 
 func toReader(v interface{}) io.Reader {

@@ -45,27 +45,21 @@ type PaginationResult struct {
 
 // PaginationParam 分页查询条件
 type PaginationParam struct {
-	Pagination bool `form:"-"`        // 是否使用分页查询
-	OnlyCount  bool `form:"-"`        // 是否仅查询count
-	Current    uint `form:"current"`  // 当前页
-	PageSize   uint `form:"pageSize"` // 页大小
+	Pagination bool `form:"-"`                                     // 是否使用分页查询
+	OnlyCount  bool `form:"-"`                                     // 是否仅查询count
+	Current    uint `form:"current,default=1"`                     // 当前页
+	PageSize   uint `form:"pageSize,default=10" binding:"max=100"` // 页大小
 }
 
 // GetCurrent 获取当前页
 func (a PaginationParam) GetCurrent() uint {
-	current := a.Current
-	if current == 0 {
-		current = 1
-	}
-	return current
+	return a.Current
 }
 
 // GetPageSize 获取页大小
 func (a PaginationParam) GetPageSize() uint {
 	pageSize := a.PageSize
-	if pageSize == 0 {
-		pageSize = 10
-	} else if pageSize > 100 {
+	if a.PageSize == 0 {
 		pageSize = 100
 	}
 	return pageSize
@@ -122,14 +116,14 @@ type OrderField struct {
 	Direction OrderDirection // 排序方向
 }
 
-// NewRecordIDResult 创建响应记录ID实例
-func NewRecordIDResult(recordID string) *RecordIDResult {
-	return &RecordIDResult{
-		RecordID: recordID,
+// NewIDResult 创建响应唯一标识实例
+func NewIDResult(id string) *IDResult {
+	return &IDResult{
+		ID: id,
 	}
 }
 
-// RecordIDResult 响应记录ID
-type RecordIDResult struct {
-	RecordID string `json:"record_id"`
+// IDResult 响应唯一标识
+type IDResult struct {
+	ID string `json:"id"`
 }

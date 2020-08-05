@@ -21,11 +21,13 @@ CertFile = ""
 KeyFile = ""
 # http优雅关闭等待超时时长(单位秒)
 ShutdownTimeout = 30
+# 允许的最大内容长度(64M)
+MaxContentLength = 67108864
 
 [Menu]
 # 使用启用初始化菜单数据
 Enable = true
-# 数据文件(json,也可以启动服务时使用-menu指定)
+# 数据文件(yaml,也可以启动服务时使用-menu指定)
 Data = ""
 
 [Casbin]
@@ -51,6 +53,8 @@ Output = "stdout"
 OutputFile = "data/gin-admin.log"
 # 是否启用日志钩子
 EnableHook = false
+# 写入钩子的日志级别
+HookLevels = ["info","warn","error"]
 # 日志钩子(支持：gorm/mongo)
 Hook = "gorm"
 # 写入钩子的最大工作线程数量
@@ -153,9 +157,17 @@ AllowCredentials = true
 # 可以缓存预检请求结果的时间（以秒为单位）
 MaxAge = 7200
 
+[GZIP]
+# 是否启用
+Enable = false
+# 排除的文件扩展名
+ExcludedExtentions = [".png",".gif",".jpeg",".jpg"]
+# 排除的请求路径
+ExcludedPaths = []
+
 [Gorm]
 # 是否开启调试模式
-Debug = false
+Debug = true
 # 数据库类型(目前支持的数据库类型：mysql/sqlite3/postgres)
 DBType = "sqlite3"
 # 设置连接可以重用的最长时间(单位：秒)
@@ -218,3 +230,14 @@ Database = "gin-admin"
 Timeout = 30
 # 集合名前缀
 CollectionPrefix = "g_"
+
+[UniqueID]
+# 唯一ID类型(支持：uuid/object/snowflake)
+Type = "snowflake"
+
+# https://github.com/twitter-archive/snowflake
+[UniqueID.Snowflake]
+# 节点标识(0-1023)
+Node = 1
+# 开始时间戳(2020-01-02 15:04:05)
+Epoch = 1577977445000

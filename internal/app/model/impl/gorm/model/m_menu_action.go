@@ -3,10 +3,10 @@ package model
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/gorm/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/gorm/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"github.com/jinzhu/gorm"
 )
@@ -37,8 +37,8 @@ func (a *MenuAction) Query(ctx context.Context, params schema.MenuActionQueryPar
 	if v := params.MenuID; v != "" {
 		db = db.Where("menu_id=?", v)
 	}
-	if v := params.RecordIDs; len(v) > 0 {
-		db = db.Where("record_id IN(?)", v)
+	if v := params.IDs; len(v) > 0 {
+		db = db.Where("id IN (?)", v)
 	}
 
 	opt.OrderFields = append(opt.OrderFields, schema.NewOrderField("id", schema.OrderByASC))
@@ -58,8 +58,8 @@ func (a *MenuAction) Query(ctx context.Context, params schema.MenuActionQueryPar
 }
 
 // Get 查询指定数据
-func (a *MenuAction) Get(ctx context.Context, recordID string, opts ...schema.MenuActionQueryOptions) (*schema.MenuAction, error) {
-	db := entity.GetMenuActionDB(ctx, a.DB).Where("record_id=?", recordID)
+func (a *MenuAction) Get(ctx context.Context, id string, opts ...schema.MenuActionQueryOptions) (*schema.MenuAction, error) {
+	db := entity.GetMenuActionDB(ctx, a.DB).Where("id=?", id)
 	var item entity.MenuAction
 	ok, err := FindOne(ctx, db, &item)
 	if err != nil {
@@ -75,36 +75,24 @@ func (a *MenuAction) Get(ctx context.Context, recordID string, opts ...schema.Me
 func (a *MenuAction) Create(ctx context.Context, item schema.MenuAction) error {
 	eitem := entity.SchemaMenuAction(item).ToMenuAction()
 	result := entity.GetMenuActionDB(ctx, a.DB).Create(eitem)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(result.Error)
 }
 
 // Update 更新数据
-func (a *MenuAction) Update(ctx context.Context, recordID string, item schema.MenuAction) error {
+func (a *MenuAction) Update(ctx context.Context, id string, item schema.MenuAction) error {
 	eitem := entity.SchemaMenuAction(item).ToMenuAction()
-	result := entity.GetMenuActionDB(ctx, a.DB).Where("record_id=?", recordID).Omit("record_id").Updates(eitem)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	result := entity.GetMenuActionDB(ctx, a.DB).Where("id=?", id).Updates(eitem)
+	return errors.WithStack(result.Error)
 }
 
 // Delete 删除数据
-func (a *MenuAction) Delete(ctx context.Context, recordID string) error {
-	result := entity.GetMenuActionDB(ctx, a.DB).Where("record_id=?", recordID).Delete(entity.MenuAction{})
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+func (a *MenuAction) Delete(ctx context.Context, id string) error {
+	result := entity.GetMenuActionDB(ctx, a.DB).Where("id=?", id).Delete(entity.MenuAction{})
+	return errors.WithStack(result.Error)
 }
 
 // DeleteByMenuID 根据菜单ID删除数据
 func (a *MenuAction) DeleteByMenuID(ctx context.Context, menuID string) error {
 	result := entity.GetMenuActionDB(ctx, a.DB).Where("menu_id=?", menuID).Delete(entity.MenuAction{})
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(result.Error)
 }

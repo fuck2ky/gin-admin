@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/mongo/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/mongo/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -65,9 +65,9 @@ func (a *MenuActionResource) Query(ctx context.Context, params schema.MenuAction
 }
 
 // Get 查询指定数据
-func (a *MenuActionResource) Get(ctx context.Context, recordID string, opts ...schema.MenuActionResourceQueryOptions) (*schema.MenuActionResource, error) {
+func (a *MenuActionResource) Get(ctx context.Context, id string, opts ...schema.MenuActionResourceQueryOptions) (*schema.MenuActionResource, error) {
 	c := entity.GetMenuActionResourceCollection(ctx, a.Client)
-	filter := DefaultFilter(ctx, Filter("_id", recordID))
+	filter := DefaultFilter(ctx, Filter("_id", id))
 	var item entity.MenuActionResource
 	ok, err := FindOne(ctx, c, filter, &item)
 	if err != nil {
@@ -86,42 +86,30 @@ func (a *MenuActionResource) Create(ctx context.Context, item schema.MenuActionR
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetMenuActionResourceCollection(ctx, a.Client)
 	err := Insert(ctx, c, eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(err)
 }
 
 // Update 更新数据
-func (a *MenuActionResource) Update(ctx context.Context, recordID string, item schema.MenuActionResource) error {
+func (a *MenuActionResource) Update(ctx context.Context, id string, item schema.MenuActionResource) error {
 	eitem := entity.SchemaMenuActionResource(item).ToMenuActionResource()
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetMenuActionResourceCollection(ctx, a.Client)
-	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)), eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", id)), eitem)
+	return errors.WithStack(err)
 }
 
 // Delete 删除数据
-func (a *MenuActionResource) Delete(ctx context.Context, recordID string) error {
+func (a *MenuActionResource) Delete(ctx context.Context, id string) error {
 	c := entity.GetMenuActionResourceCollection(ctx, a.Client)
-	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", id)))
+	return errors.WithStack(err)
 }
 
 // DeleteByActionID 根据动作ID删除数据
 func (a *MenuActionResource) DeleteByActionID(ctx context.Context, actionID string) error {
 	c := entity.GetMenuActionResourceCollection(ctx, a.Client)
 	err := DeleteMany(ctx, c, DefaultFilter(ctx, Filter("action_id", actionID)))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(err)
 }
 
 // DeleteByMenuID 根据菜单ID删除数据
@@ -133,10 +121,7 @@ func (a *MenuActionResource) DeleteByMenuID(ctx context.Context, menuID string) 
 
 	c := entity.GetMenuActionResourceCollection(ctx, a.Client)
 	err = DeleteMany(ctx, c, DefaultFilter(ctx, Filter("action_id", bson.M{"$in": actionIDs})))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(err)
 }
 
 func (a *MenuActionResource) queryActionIDs(ctx context.Context, menuIDs ...string) ([]interface{}, error) {

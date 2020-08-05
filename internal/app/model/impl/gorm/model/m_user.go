@@ -3,10 +3,10 @@ package model
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/gorm/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/gorm/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"github.com/jinzhu/gorm"
 )
@@ -44,9 +44,9 @@ func (a *User) Query(ctx context.Context, params schema.UserQueryParam, opts ...
 		subQuery := entity.GetUserRoleDB(ctx, a.DB).
 			Select("user_id").
 			Where("deleted_at is null").
-			Where("role_id IN(?)", v).
+			Where("role_id IN (?)", v).
 			SubQuery()
-		db = db.Where("record_id IN ?", subQuery)
+		db = db.Where("id IN ?", subQuery)
 	}
 	if v := params.QueryValue; v != "" {
 		v = "%" + v + "%"
@@ -70,9 +70,9 @@ func (a *User) Query(ctx context.Context, params schema.UserQueryParam, opts ...
 }
 
 // Get 查询指定数据
-func (a *User) Get(ctx context.Context, recordID string, opts ...schema.UserQueryOptions) (*schema.User, error) {
+func (a *User) Get(ctx context.Context, id string, opts ...schema.UserQueryOptions) (*schema.User, error) {
 	var item entity.User
-	ok, err := FindOne(ctx, entity.GetUserDB(ctx, a.DB).Where("record_id=?", recordID), &item)
+	ok, err := FindOne(ctx, entity.GetUserDB(ctx, a.DB).Where("id=?", id), &item)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	} else if !ok {
@@ -86,45 +86,30 @@ func (a *User) Get(ctx context.Context, recordID string, opts ...schema.UserQuer
 func (a *User) Create(ctx context.Context, item schema.User) error {
 	sitem := entity.SchemaUser(item)
 	result := entity.GetUserDB(ctx, a.DB).Create(sitem.ToUser())
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(result.Error)
 }
 
 // Update 更新数据
-func (a *User) Update(ctx context.Context, recordID string, item schema.User) error {
+func (a *User) Update(ctx context.Context, id string, item schema.User) error {
 	eitem := entity.SchemaUser(item).ToUser()
-	result := entity.GetUserDB(ctx, a.DB).Where("record_id=?", recordID).Updates(eitem)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	result := entity.GetUserDB(ctx, a.DB).Where("id=?", id).Updates(eitem)
+	return errors.WithStack(result.Error)
 }
 
 // Delete 删除数据
-func (a *User) Delete(ctx context.Context, recordID string) error {
-	result := entity.GetUserDB(ctx, a.DB).Where("record_id=?", recordID).Delete(entity.User{})
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+func (a *User) Delete(ctx context.Context, id string) error {
+	result := entity.GetUserDB(ctx, a.DB).Where("id=?", id).Delete(entity.User{})
+	return errors.WithStack(result.Error)
 }
 
 // UpdateStatus 更新状态
-func (a *User) UpdateStatus(ctx context.Context, recordID string, status int) error {
-	result := entity.GetUserDB(ctx, a.DB).Where("record_id=?", recordID).Update("status", status)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+func (a *User) UpdateStatus(ctx context.Context, id string, status int) error {
+	result := entity.GetUserDB(ctx, a.DB).Where("id=?", id).Update("status", status)
+	return errors.WithStack(result.Error)
 }
 
 // UpdatePassword 更新密码
-func (a *User) UpdatePassword(ctx context.Context, recordID, password string) error {
-	result := entity.GetUserDB(ctx, a.DB).Where("record_id=?", recordID).Update("password", password)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+func (a *User) UpdatePassword(ctx context.Context, id, password string) error {
+	result := entity.GetUserDB(ctx, a.DB).Where("id=?", id).Update("password", password)
+	return errors.WithStack(result.Error)
 }

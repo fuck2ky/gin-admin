@@ -3,14 +3,14 @@ package entity
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/jinzhu/gorm"
 )
 
 // GetMenuDB 获取菜单存储
 func GetMenuDB(ctx context.Context, defDB *gorm.DB) *gorm.DB {
-	return getDBWithModel(ctx, defDB, new(Menu))
+	return GetDBWithModel(ctx, defDB, new(Menu))
 }
 
 // SchemaMenu 菜单对象
@@ -36,15 +36,6 @@ type Menu struct {
 	Status     int     `gorm:"column:status;index;default:0;not null;"`        // 状态(1:启用 2:禁用)
 	Memo       *string `gorm:"column:memo;size:1024;"`                         // 备注
 	Creator    string  `gorm:"column:creator;size:36;"`                        // 创建人
-}
-
-func (a Menu) String() string {
-	return toString(a)
-}
-
-// TableName 表名
-func (a Menu) TableName() string {
-	return a.Model.TableName("menu")
 }
 
 // ToSchemaMenu 转换为菜单对象

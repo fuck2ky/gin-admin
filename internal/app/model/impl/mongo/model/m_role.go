@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/mongo/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/mongo/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,7 +39,7 @@ func (a *Role) Query(ctx context.Context, params schema.RoleQueryParam, opts ...
 	c := entity.GetRoleCollection(ctx, a.Client)
 	filter := DefaultFilter(ctx)
 
-	if v := params.RecordIDs; len(v) > 0 {
+	if v := params.IDs; len(v) > 0 {
 		filter = append(filter, Filter("_id", bson.M{"$in": v}))
 	}
 	if v := params.Name; v != "" {
@@ -77,9 +77,9 @@ func (a *Role) Query(ctx context.Context, params schema.RoleQueryParam, opts ...
 }
 
 // Get 查询指定数据
-func (a *Role) Get(ctx context.Context, recordID string, opts ...schema.RoleQueryOptions) (*schema.Role, error) {
+func (a *Role) Get(ctx context.Context, id string, opts ...schema.RoleQueryOptions) (*schema.Role, error) {
 	c := entity.GetRoleCollection(ctx, a.Client)
-	filter := DefaultFilter(ctx, Filter("_id", recordID))
+	filter := DefaultFilter(ctx, Filter("_id", id))
 	var item entity.Role
 	ok, err := FindOne(ctx, c, filter, &item)
 	if err != nil {
@@ -98,40 +98,28 @@ func (a *Role) Create(ctx context.Context, item schema.Role) error {
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetRoleCollection(ctx, a.Client)
 	err := Insert(ctx, c, eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(err)
 }
 
 // Update 更新数据
-func (a *Role) Update(ctx context.Context, recordID string, item schema.Role) error {
+func (a *Role) Update(ctx context.Context, id string, item schema.Role) error {
 	eitem := entity.SchemaRole(item).ToRole()
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetRoleCollection(ctx, a.Client)
-	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)), eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", id)), eitem)
+	return errors.WithStack(err)
 }
 
 // Delete 删除数据
-func (a *Role) Delete(ctx context.Context, recordID string) error {
+func (a *Role) Delete(ctx context.Context, id string) error {
 	c := entity.GetRoleCollection(ctx, a.Client)
-	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", id)))
+	return errors.WithStack(err)
 }
 
 // UpdateStatus 更新状态
-func (a *Role) UpdateStatus(ctx context.Context, recordID string, status int) error {
+func (a *Role) UpdateStatus(ctx context.Context, id string, status int) error {
 	c := entity.GetRoleCollection(ctx, a.Client)
-	err := UpdateFields(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)), bson.M{"status": status})
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := UpdateFields(ctx, c, DefaultFilter(ctx, Filter("_id", id)), bson.M{"status": status})
+	return errors.WithStack(err)
 }

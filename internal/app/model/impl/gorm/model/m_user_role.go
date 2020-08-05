@@ -3,10 +3,10 @@ package model
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/gorm/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/gorm/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"github.com/jinzhu/gorm"
 )
@@ -38,7 +38,7 @@ func (a *UserRole) Query(ctx context.Context, params schema.UserRoleQueryParam, 
 		db = db.Where("user_id=?", v)
 	}
 	if v := params.UserIDs; len(v) > 0 {
-		db = db.Where("user_id IN(?)", v)
+		db = db.Where("user_id IN (?)", v)
 	}
 
 	opt.OrderFields = append(opt.OrderFields, schema.NewOrderField("id", schema.OrderByDESC))
@@ -58,8 +58,8 @@ func (a *UserRole) Query(ctx context.Context, params schema.UserRoleQueryParam, 
 }
 
 // Get 查询指定数据
-func (a *UserRole) Get(ctx context.Context, recordID string, opts ...schema.UserRoleQueryOptions) (*schema.UserRole, error) {
-	db := entity.GetUserRoleDB(ctx, a.DB).Where("record_id=?", recordID)
+func (a *UserRole) Get(ctx context.Context, id string, opts ...schema.UserRoleQueryOptions) (*schema.UserRole, error) {
+	db := entity.GetUserRoleDB(ctx, a.DB).Where("id=?", id)
 	var item entity.UserRole
 	ok, err := FindOne(ctx, db, &item)
 	if err != nil {
@@ -75,36 +75,24 @@ func (a *UserRole) Get(ctx context.Context, recordID string, opts ...schema.User
 func (a *UserRole) Create(ctx context.Context, item schema.UserRole) error {
 	eitem := entity.SchemaUserRole(item).ToUserRole()
 	result := entity.GetUserRoleDB(ctx, a.DB).Create(eitem)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(result.Error)
 }
 
 // Update 更新数据
-func (a *UserRole) Update(ctx context.Context, recordID string, item schema.UserRole) error {
+func (a *UserRole) Update(ctx context.Context, id string, item schema.UserRole) error {
 	eitem := entity.SchemaUserRole(item).ToUserRole()
-	result := entity.GetUserRoleDB(ctx, a.DB).Where("record_id=?", recordID).Updates(eitem)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	result := entity.GetUserRoleDB(ctx, a.DB).Where("id=?", id).Updates(eitem)
+	return errors.WithStack(result.Error)
 }
 
 // Delete 删除数据
-func (a *UserRole) Delete(ctx context.Context, recordID string) error {
-	result := entity.GetUserRoleDB(ctx, a.DB).Where("record_id=?", recordID).Delete(entity.UserRole{})
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+func (a *UserRole) Delete(ctx context.Context, id string) error {
+	result := entity.GetUserRoleDB(ctx, a.DB).Where("id=?", id).Delete(entity.UserRole{})
+	return errors.WithStack(result.Error)
 }
 
 // DeleteByUserID 根据用户ID删除数据
 func (a *UserRole) DeleteByUserID(ctx context.Context, userID string) error {
 	result := entity.GetUserRoleDB(ctx, a.DB).Where("user_id=?", userID).Delete(entity.UserRole{})
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(result.Error)
 }

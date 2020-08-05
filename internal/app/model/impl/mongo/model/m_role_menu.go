@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/mongo/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/mongo/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,9 +61,9 @@ func (a *RoleMenu) Query(ctx context.Context, params schema.RoleMenuQueryParam, 
 }
 
 // Get 查询指定数据
-func (a *RoleMenu) Get(ctx context.Context, recordID string, opts ...schema.RoleMenuQueryOptions) (*schema.RoleMenu, error) {
+func (a *RoleMenu) Get(ctx context.Context, id string, opts ...schema.RoleMenuQueryOptions) (*schema.RoleMenu, error) {
 	c := entity.GetRoleMenuCollection(ctx, a.Client)
-	filter := DefaultFilter(ctx, Filter("_id", recordID))
+	filter := DefaultFilter(ctx, Filter("_id", id))
 	var item entity.RoleMenu
 	ok, err := FindOne(ctx, c, filter, &item)
 	if err != nil {
@@ -82,40 +82,28 @@ func (a *RoleMenu) Create(ctx context.Context, item schema.RoleMenu) error {
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetRoleMenuCollection(ctx, a.Client)
 	err := Insert(ctx, c, eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(err)
 }
 
 // Update 更新数据
-func (a *RoleMenu) Update(ctx context.Context, recordID string, item schema.RoleMenu) error {
+func (a *RoleMenu) Update(ctx context.Context, id string, item schema.RoleMenu) error {
 	eitem := entity.SchemaRoleMenu(item).ToRoleMenu()
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetRoleMenuCollection(ctx, a.Client)
-	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)), eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", id)), eitem)
+	return errors.WithStack(err)
 }
 
 // Delete 删除数据
-func (a *RoleMenu) Delete(ctx context.Context, recordID string) error {
+func (a *RoleMenu) Delete(ctx context.Context, id string) error {
 	c := entity.GetRoleMenuCollection(ctx, a.Client)
-	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", id)))
+	return errors.WithStack(err)
 }
 
 // DeleteByRoleID 根据角色ID删除数据
 func (a *RoleMenu) DeleteByRoleID(ctx context.Context, roleID string) error {
 	c := entity.GetRoleMenuCollection(ctx, a.Client)
 	err := DeleteMany(ctx, c, DefaultFilter(ctx, Filter("role_id", roleID)))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(err)
 }

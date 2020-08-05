@@ -2,7 +2,10 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -14,6 +17,7 @@ const (
 	SpanTitleKey    = "span_title"
 	SpanFunctionKey = "span_function"
 	VersionKey      = "version"
+	StackKey        = "stack"
 )
 
 // TraceIDFunc 定义获取跟踪ID的函数
@@ -22,7 +26,16 @@ type TraceIDFunc func() string
 var (
 	version     string
 	traceIDFunc TraceIDFunc
+	pid         = os.Getpid()
 )
+
+func init() {
+	traceIDFunc = func() string {
+		return fmt.Sprintf("trace-id-%d-%s",
+			os.Getpid(),
+			time.Now().Format("2006.01.02.15.04.05.999999"))
+	}
+}
 
 // Logger 定义日志别名
 type Logger = logrus.Logger
@@ -70,42 +83,35 @@ func AddHook(hook Hook) {
 	logrus.AddHook(hook)
 }
 
-func getTraceID() string {
-	if traceIDFunc != nil {
-		return traceIDFunc()
-	}
-	return ""
-}
-
 type (
-	traceIDContextKey struct{}
-	userIDContextKey  struct{}
+	traceIDKey struct{}
+	userIDKey  struct{}
 )
 
 // NewTraceIDContext 创建跟踪ID上下文
 func NewTraceIDContext(ctx context.Context, traceID string) context.Context {
-	return context.WithValue(ctx, traceIDContextKey{}, traceID)
+	return context.WithValue(ctx, traceIDKey{}, traceID)
 }
 
 // FromTraceIDContext 从上下文中获取跟踪ID
 func FromTraceIDContext(ctx context.Context) string {
-	v := ctx.Value(traceIDContextKey{})
+	v := ctx.Value(traceIDKey{})
 	if v != nil {
 		if s, ok := v.(string); ok {
 			return s
 		}
 	}
-	return getTraceID()
+	return traceIDFunc()
 }
 
 // NewUserIDContext 创建用户ID上下文
 func NewUserIDContext(ctx context.Context, userID string) context.Context {
-	return context.WithValue(ctx, userIDContextKey{}, userID)
+	return context.WithValue(ctx, userIDKey{}, userID)
 }
 
 // FromUserIDContext 从上下文中获取用户ID
 func FromUserIDContext(ctx context.Context) string {
-	v := ctx.Value(userIDContextKey{})
+	v := ctx.Value(userIDKey{})
 	if v != nil {
 		if s, ok := v.(string); ok {
 			return s
@@ -194,6 +200,11 @@ func Errorf(ctx context.Context, format string, args ...interface{}) {
 // Fatalf 写入重大错误日志
 func Fatalf(ctx context.Context, format string, args ...interface{}) {
 	StartSpan(ctx).Fatalf(format, args...)
+}
+
+// ErrorStack 输出错误栈
+func ErrorStack(ctx context.Context, err error) {
+	StartSpan(ctx).WithField(StackKey, fmt.Sprintf("%+v", err)).Errorf(err.Error())
 }
 
 func newEntry(entry *logrus.Entry) *Entry {

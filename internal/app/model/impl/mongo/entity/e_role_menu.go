@@ -3,15 +3,15 @@ package entity
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // GetRoleMenuCollection 获取RoleMenu存储
 func GetRoleMenuCollection(ctx context.Context, cli *mongo.Client) *mongo.Collection {
-	return getCollection(ctx, cli, RoleMenu{})
+	return GetCollection(ctx, cli, RoleMenu{})
 }
 
 // SchemaRoleMenu 角色菜单
@@ -30,10 +30,6 @@ type RoleMenu struct {
 	RoleID   string `bson:"role_id"`   // 角色ID
 	MenuID   string `bson:"menu_id"`   // 菜单ID
 	ActionID string `bson:"action_id"` // 动作ID
-}
-
-func (a RoleMenu) String() string {
-	return toString(a)
 }
 
 // CollectionName 集合名

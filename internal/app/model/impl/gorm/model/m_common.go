@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	icontext "github.com/LyricTian/gin-admin/internal/app/context"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/internal/app/icontext"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
 	"github.com/jinzhu/gorm"
 )
 
@@ -64,7 +64,12 @@ func FindPage(ctx context.Context, db *gorm.DB, pp schema.PaginationParam, out i
 	}
 
 	current, pageSize := pp.GetCurrent(), pp.GetPageSize()
-	db = db.Offset((current - 1) * pageSize).Limit(pageSize)
+	if current > 0 && pageSize > 0 {
+		db = db.Offset((current - 1) * pageSize).Limit(pageSize)
+	} else if pageSize > 0 {
+		db = db.Limit(pageSize)
+	}
+
 	err = db.Find(out).Error
 	return count, err
 }

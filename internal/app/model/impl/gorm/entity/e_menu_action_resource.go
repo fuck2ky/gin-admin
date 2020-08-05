@@ -3,14 +3,14 @@ package entity
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/jinzhu/gorm"
 )
 
 // GetMenuActionResourceDB 菜单动作关联资源
 func GetMenuActionResourceDB(ctx context.Context, defDB *gorm.DB) *gorm.DB {
-	return getDBWithModel(ctx, defDB, new(MenuActionResource))
+	return GetDBWithModel(ctx, defDB, new(MenuActionResource))
 }
 
 // SchemaMenuActionResource 菜单动作关联资源
@@ -29,15 +29,6 @@ type MenuActionResource struct {
 	ActionID string `gorm:"column:action_id;size:36;index;default:'';not null;"` // 菜单动作ID
 	Method   string `gorm:"column:method;size:100;default:'';not null;"`         // 资源请求方式(支持正则)
 	Path     string `gorm:"column:path;size:100;default:'';not null;"`           // 资源请求路径（支持/:id匹配）
-}
-
-func (a MenuActionResource) String() string {
-	return toString(a)
-}
-
-// TableName 表名
-func (a MenuActionResource) TableName() string {
-	return a.Model.TableName("menu_action_resource")
 }
 
 // ToSchemaMenuActionResource 转换为菜单动作关联资源对象

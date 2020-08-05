@@ -3,15 +3,15 @@ package entity
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // GetMenuCollection 获取Menu存储
 func GetMenuCollection(ctx context.Context, cli *mongo.Client) *mongo.Collection {
-	return getCollection(ctx, cli, Menu{})
+	return GetCollection(ctx, cli, Menu{})
 }
 
 // SchemaMenu 菜单对象
@@ -37,10 +37,6 @@ type Menu struct {
 	Status     int    `bson:"status"`      // 状态(1:启用 2:禁用)
 	Memo       string `bson:"memo"`        // 备注
 	Creator    string `bson:"creator"`     // 创建人
-}
-
-func (a Menu) String() string {
-	return toString(a)
 }
 
 // CollectionName 集合名

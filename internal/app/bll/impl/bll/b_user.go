@@ -3,11 +3,12 @@ package bll
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/bll"
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/bll"
+	"github.com/LyricTian/gin-admin/v6/internal/app/iutil"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/casbin/casbin/v2"
 	"github.com/google/wire"
 )
@@ -41,14 +42,14 @@ func (a *User) QueryShow(ctx context.Context, params schema.UserQueryParam, opts
 	}
 
 	userRoleResult, err := a.UserRoleModel.Query(ctx, schema.UserRoleQueryParam{
-		UserIDs: result.Data.ToRecordIDs(),
+		UserIDs: result.Data.ToIDs(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	roleResult, err := a.RoleModel.Query(ctx, schema.RoleQueryParam{
-		RecordIDs: userRoleResult.Data.ToRoleIDs(),
+		IDs: userRoleResult.Data.ToRoleIDs(),
 	})
 	if err != nil {
 		return nil, err
@@ -58,8 +59,8 @@ func (a *User) QueryShow(ctx context.Context, params schema.UserQueryParam, opts
 }
 
 // Get 查询指定数据
-func (a *User) Get(ctx context.Context, recordID string, opts ...schema.UserQueryOptions) (*schema.User, error) {
-	item, err := a.UserModel.Get(ctx, recordID, opts...)
+func (a *User) Get(ctx context.Context, id string, opts ...schema.UserQueryOptions) (*schema.User, error) {
+	item, err := a.UserModel.Get(ctx, id, opts...)
 	if err != nil {
 		return nil, err
 	} else if item == nil {
@@ -67,7 +68,7 @@ func (a *User) Get(ctx context.Context, recordID string, opts ...schema.UserQuer
 	}
 
 	userRoleResult, err := a.UserRoleModel.Query(ctx, schema.UserRoleQueryParam{
-		UserID: recordID,
+		UserID: id,
 	})
 	if err != nil {
 		return nil, err
@@ -78,18 +79,18 @@ func (a *User) Get(ctx context.Context, recordID string, opts ...schema.UserQuer
 }
 
 // Create 创建数据
-func (a *User) Create(ctx context.Context, item schema.User) (*schema.RecordIDResult, error) {
+func (a *User) Create(ctx context.Context, item schema.User) (*schema.IDResult, error) {
 	err := a.checkUserName(ctx, item)
 	if err != nil {
 		return nil, err
 	}
 
 	item.Password = util.SHA1HashString(item.Password)
-	item.RecordID = util.NewRecordID()
+	item.ID = iutil.NewID()
 	err = ExecTrans(ctx, a.TransModel, func(ctx context.Context) error {
 		for _, urItem := range item.UserRoles {
-			urItem.RecordID = util.NewRecordID()
-			urItem.UserID = item.RecordID
+			urItem.ID = iutil.NewID()
+			urItem.UserID = item.ID
 			err := a.UserRoleModel.Create(ctx, *urItem)
 			if err != nil {
 				return err
@@ -103,11 +104,11 @@ func (a *User) Create(ctx context.Context, item schema.User) (*schema.RecordIDRe
 	}
 
 	LoadCasbinPolicy(ctx, a.Enforcer)
-	return schema.NewRecordIDResult(item.RecordID), nil
+	return schema.NewIDResult(item.ID), nil
 }
 
 func (a *User) checkUserName(ctx context.Context, item schema.User) error {
-	if item.UserName == GetRootUser().UserName {
+	if item.UserName == schema.GetRootUser().UserName {
 		return errors.New400Response("用户名不合法")
 	}
 
@@ -124,8 +125,8 @@ func (a *User) checkUserName(ctx context.Context, item schema.User) error {
 }
 
 // Update 更新数据
-func (a *User) Update(ctx context.Context, recordID string, item schema.User) error {
-	oldItem, err := a.Get(ctx, recordID)
+func (a *User) Update(ctx context.Context, id string, item schema.User) error {
+	oldItem, err := a.Get(ctx, id)
 	if err != nil {
 		return err
 	} else if oldItem == nil {
@@ -143,14 +144,14 @@ func (a *User) Update(ctx context.Context, recordID string, item schema.User) er
 		item.Password = oldItem.Password
 	}
 
-	item.RecordID = oldItem.RecordID
+	item.ID = oldItem.ID
 	item.Creator = oldItem.Creator
 	item.CreatedAt = oldItem.CreatedAt
 	err = ExecTrans(ctx, a.TransModel, func(ctx context.Context) error {
 		addUserRoles, delUserRoles := a.compareUserRoles(ctx, oldItem.UserRoles, item.UserRoles)
 		for _, rmitem := range addUserRoles {
-			rmitem.RecordID = util.NewRecordID()
-			rmitem.UserID = recordID
+			rmitem.ID = iutil.NewID()
+			rmitem.UserID = id
 			err := a.UserRoleModel.Create(ctx, *rmitem)
 			if err != nil {
 				return err
@@ -158,13 +159,13 @@ func (a *User) Update(ctx context.Context, recordID string, item schema.User) er
 		}
 
 		for _, rmitem := range delUserRoles {
-			err := a.UserRoleModel.Delete(ctx, rmitem.RecordID)
+			err := a.UserRoleModel.Delete(ctx, rmitem.ID)
 			if err != nil {
 				return err
 			}
 		}
 
-		return a.UserModel.Update(ctx, recordID, item)
+		return a.UserModel.Update(ctx, id, item)
 	})
 	if err != nil {
 		return err
@@ -193,8 +194,8 @@ func (a *User) compareUserRoles(ctx context.Context, oldUserRoles, newUserRoles 
 }
 
 // Delete 删除数据
-func (a *User) Delete(ctx context.Context, recordID string) error {
-	oldItem, err := a.UserModel.Get(ctx, recordID)
+func (a *User) Delete(ctx context.Context, id string) error {
+	oldItem, err := a.UserModel.Get(ctx, id)
 	if err != nil {
 		return err
 	} else if oldItem == nil {
@@ -202,12 +203,12 @@ func (a *User) Delete(ctx context.Context, recordID string) error {
 	}
 
 	err = ExecTrans(ctx, a.TransModel, func(ctx context.Context) error {
-		err := a.UserRoleModel.DeleteByUserID(ctx, recordID)
+		err := a.UserRoleModel.DeleteByUserID(ctx, id)
 		if err != nil {
 			return err
 		}
 
-		return a.UserModel.Delete(ctx, recordID)
+		return a.UserModel.Delete(ctx, id)
 	})
 	if err != nil {
 		return err
@@ -218,8 +219,8 @@ func (a *User) Delete(ctx context.Context, recordID string) error {
 }
 
 // UpdateStatus 更新状态
-func (a *User) UpdateStatus(ctx context.Context, recordID string, status int) error {
-	oldItem, err := a.UserModel.Get(ctx, recordID)
+func (a *User) UpdateStatus(ctx context.Context, id string, status int) error {
+	oldItem, err := a.UserModel.Get(ctx, id)
 	if err != nil {
 		return err
 	} else if oldItem == nil {
@@ -227,7 +228,7 @@ func (a *User) UpdateStatus(ctx context.Context, recordID string, status int) er
 	}
 	oldItem.Status = status
 
-	err = a.UserModel.UpdateStatus(ctx, recordID, status)
+	err = a.UserModel.UpdateStatus(ctx, id, status)
 	if err != nil {
 		return err
 	}

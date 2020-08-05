@@ -5,21 +5,21 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
-	"github.com/LyricTian/gin-admin/pkg/logger"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/pkg/logger"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 )
 
 // 定义上下文中的键
 const (
-	prefix = "gin-admin"
-	// UserIDKey 存储上下文中的键(用户ID)
-	UserIDKey = prefix + "/user-id"
-	// ResBodyKey 存储上下文中的键(响应Body数据)
-	ResBodyKey = prefix + "/res-body"
+	prefix           = "gin-admin"
+	UserIDKey        = prefix + "/user-id"
+	ReqBodyKey       = prefix + "/req-body"
+	ResBodyKey       = prefix + "/res-body"
+	LoggerReqBodyKey = prefix + "/logger-req-body"
 )
 
 // GetToken 获取用户令牌
@@ -41,6 +41,16 @@ func GetUserID(c *gin.Context) string {
 // SetUserID 设定用户ID
 func SetUserID(c *gin.Context, userID string) {
 	c.Set(UserIDKey, userID)
+}
+
+// GetBody Get request body
+func GetBody(c *gin.Context) []byte {
+	if v, ok := c.Get(ReqBodyKey); ok {
+		if b, ok := v.([]byte); ok {
+			return b
+		}
+	}
+	return nil
 }
 
 // ParseJSON 解析请求JSON
@@ -110,7 +120,7 @@ func ResError(c *gin.Context, err error, status ...int) {
 		if e, ok := err.(*errors.ResponseError); ok {
 			res = e
 		} else {
-			res = errors.UnWrapResponse(errors.Wrap500Response(err))
+			res = errors.UnWrapResponse(errors.Wrap500Response(err, "服务器错误"))
 		}
 	} else {
 		res = errors.UnWrapResponse(errors.ErrInternalServer)
@@ -124,9 +134,7 @@ func ResError(c *gin.Context, err error, status ...int) {
 		if status := res.StatusCode; status >= 400 && status < 500 {
 			logger.StartSpan(ctx).Warnf(err.Error())
 		} else if status >= 500 {
-			span := logger.StartSpan(ctx)
-			span = span.WithField("stack", fmt.Sprintf("%+v", err))
-			span.Errorf(err.Error())
+			logger.ErrorStack(ctx, err)
 		}
 	}
 

@@ -4,8 +4,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/unique"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,30 +17,30 @@ func TestMenu(t *testing.T) {
 
 	// post /menus
 	addItem := &schema.Menu{
-		Name:       util.MustUUID(),
+		Name:       unique.MustUUID().String(),
 		ShowStatus: 1,
 		Status:     1,
 	}
 	engine.ServeHTTP(w, newPostRequest(router, addItem))
 	assert.Equal(t, 200, w.Code)
-	var addItemRes ResRecordID
+	var addItemRes ResID
 	err = parseReader(w.Body, &addItemRes)
 	assert.Nil(t, err)
 
 	// get /menus/:id
-	engine.ServeHTTP(w, newGetRequest("%s/%s", nil, router, addItemRes.RecordID))
+	engine.ServeHTTP(w, newGetRequest("%s/%s", nil, router, addItemRes.ID))
 	assert.Equal(t, 200, w.Code)
 	var getItem schema.Menu
 	err = parseReader(w.Body, &getItem)
 	assert.Nil(t, err)
 	assert.Equal(t, addItem.Name, getItem.Name)
 	assert.Equal(t, addItem.Status, getItem.Status)
-	assert.NotEmpty(t, getItem.RecordID)
+	assert.NotEmpty(t, getItem.ID)
 
 	// put /menus/:id
 	putItem := getItem
-	putItem.Name = util.MustUUID()
-	engine.ServeHTTP(w, newPutRequest("%s/%s", putItem, router, getItem.RecordID))
+	putItem.Name = unique.MustUUID().String()
+	engine.ServeHTTP(w, newPutRequest("%s/%s", putItem, router, getItem.ID))
 	assert.Equal(t, 200, w.Code)
 	err = parseOK(w.Body)
 	assert.Nil(t, err)
@@ -53,12 +53,12 @@ func TestMenu(t *testing.T) {
 	assert.Nil(t, err)
 	assert.GreaterOrEqual(t, len(pageItems), 1)
 	if len(pageItems) > 0 {
-		assert.Equal(t, putItem.RecordID, pageItems[0].RecordID)
+		assert.Equal(t, putItem.ID, pageItems[0].ID)
 		assert.Equal(t, putItem.Name, pageItems[0].Name)
 	}
 
 	// delete /menus/:id
-	engine.ServeHTTP(w, newDeleteRequest("%s/%s", router, addItemRes.RecordID))
+	engine.ServeHTTP(w, newDeleteRequest("%s/%s", router, addItemRes.ID))
 	assert.Equal(t, 200, w.Code)
 	err = parseOK(w.Body)
 	assert.Nil(t, err)

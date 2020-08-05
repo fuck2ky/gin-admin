@@ -6,12 +6,12 @@ import (
 	"sort"
 
 	"github.com/LyricTian/captcha"
-	"github.com/LyricTian/gin-admin/internal/app/bll"
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/auth"
-	"github.com/LyricTian/gin-admin/pkg/errors"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/bll"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/auth"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/google/wire"
 )
 
@@ -60,7 +60,7 @@ func (a *Login) ResCaptcha(ctx context.Context, w http.ResponseWriter, captchaID
 // Verify 登录验证
 func (a *Login) Verify(ctx context.Context, userName, password string) (*schema.User, error) {
 	// 检查是否是超级用户
-	root := GetRootUser()
+	root := schema.GetRootUser()
 	if userName == root.UserName && root.Password == password {
 		return root, nil
 	}
@@ -122,8 +122,8 @@ func (a *Login) checkAndGetUser(ctx context.Context, userID string) (*schema.Use
 
 // GetLoginInfo 获取当前用户登录信息
 func (a *Login) GetLoginInfo(ctx context.Context, userID string) (*schema.UserLoginInfo, error) {
-	if isRoot := CheckIsRootUser(ctx, userID); isRoot {
-		root := GetRootUser()
+	if isRoot := schema.CheckIsRootUser(ctx, userID); isRoot {
+		root := schema.GetRootUser()
 		loginInfo := &schema.UserLoginInfo{
 			UserName: root.UserName,
 			RealName: root.RealName,
@@ -137,7 +137,7 @@ func (a *Login) GetLoginInfo(ctx context.Context, userID string) (*schema.UserLo
 	}
 
 	info := &schema.UserLoginInfo{
-		UserID:   user.RecordID,
+		UserID:   user.ID,
 		UserName: user.UserName,
 		RealName: user.RealName,
 	}
@@ -151,8 +151,8 @@ func (a *Login) GetLoginInfo(ctx context.Context, userID string) (*schema.UserLo
 
 	if roleIDs := userRoleResult.Data.ToRoleIDs(); len(roleIDs) > 0 {
 		roleResult, err := a.RoleModel.Query(ctx, schema.RoleQueryParam{
-			RecordIDs: roleIDs,
-			Status:    1,
+			IDs:    roleIDs,
+			Status: 1,
 		})
 		if err != nil {
 			return nil, err
@@ -165,7 +165,7 @@ func (a *Login) GetLoginInfo(ctx context.Context, userID string) (*schema.UserLo
 
 // QueryUserMenuTree 查询当前用户的权限菜单树
 func (a *Login) QueryUserMenuTree(ctx context.Context, userID string) (schema.MenuTrees, error) {
-	isRoot := CheckIsRootUser(ctx, userID)
+	isRoot := schema.CheckIsRootUser(ctx, userID)
 	// 如果是root用户，则查询所有显示的菜单树
 	if isRoot {
 		result, err := a.MenuModel.Query(ctx, schema.MenuQueryParam{
@@ -203,8 +203,8 @@ func (a *Login) QueryUserMenuTree(ctx context.Context, userID string) (schema.Me
 	}
 
 	menuResult, err := a.MenuModel.Query(ctx, schema.MenuQueryParam{
-		RecordIDs: roleMenuResult.Data.ToMenuIDs(),
-		Status:    1,
+		IDs:    roleMenuResult.Data.ToMenuIDs(),
+		Status: 1,
 	})
 	if err != nil {
 		return nil, err
@@ -213,16 +213,16 @@ func (a *Login) QueryUserMenuTree(ctx context.Context, userID string) (schema.Me
 	}
 
 	mData := menuResult.Data.ToMap()
-	var qRecordIDs []string
-	for _, pid := range menuResult.Data.SplitParentRecordIDs() {
+	var qIDs []string
+	for _, pid := range menuResult.Data.SplitParentIDs() {
 		if _, ok := mData[pid]; !ok {
-			qRecordIDs = append(qRecordIDs, pid)
+			qIDs = append(qIDs, pid)
 		}
 	}
 
-	if len(qRecordIDs) > 0 {
+	if len(qIDs) > 0 {
 		pmenuResult, err := a.MenuModel.Query(ctx, schema.MenuQueryParam{
-			RecordIDs: menuResult.Data.SplitParentRecordIDs(),
+			IDs: menuResult.Data.SplitParentIDs(),
 		})
 		if err != nil {
 			return nil, err
@@ -232,7 +232,7 @@ func (a *Login) QueryUserMenuTree(ctx context.Context, userID string) (schema.Me
 
 	sort.Sort(menuResult.Data)
 	menuActionResult, err := a.MenuActionModel.Query(ctx, schema.MenuActionQueryParam{
-		RecordIDs: roleMenuResult.Data.ToActionIDs(),
+		IDs: roleMenuResult.Data.ToActionIDs(),
 	})
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (a *Login) QueryUserMenuTree(ctx context.Context, userID string) (schema.Me
 
 // UpdatePassword 更新当前用户登录密码
 func (a *Login) UpdatePassword(ctx context.Context, userID string, params schema.UpdatePasswordParam) error {
-	if CheckIsRootUser(ctx, userID) {
+	if schema.CheckIsRootUser(ctx, userID) {
 		return errors.New400Response("root用户不允许更新密码")
 	}
 

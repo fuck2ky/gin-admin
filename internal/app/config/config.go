@@ -6,8 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/LyricTian/gin-admin/pkg/util"
-
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/koding/multiconfig"
 )
 
@@ -75,12 +74,20 @@ type Config struct {
 	Captcha      Captcha
 	RateLimiter  RateLimiter
 	CORS         CORS
+	GZIP         GZIP
 	Redis        Redis
 	Gorm         Gorm
 	MySQL        MySQL
 	Postgres     Postgres
 	Sqlite3      Sqlite3
 	Mongo        Mongo
+	UniqueID     struct {
+		Type      string
+		Snowflake struct {
+			Node  int64
+			Epoch int64
+		}
+	}
 }
 
 // IsDebugMode 是否是debug模式
@@ -123,6 +130,7 @@ type Log struct {
 	Output        string
 	OutputFile    string
 	EnableHook    bool
+	HookLevels    []string
 	Hook          LogHook
 	HookMaxThread int
 	HookMaxBuffer int
@@ -163,11 +171,12 @@ type JWTAuth struct {
 
 // HTTP http配置参数
 type HTTP struct {
-	Host            string
-	Port            int
-	CertFile        string
-	KeyFile         string
-	ShutdownTimeout int
+	Host             string
+	Port             int
+	CertFile         string
+	KeyFile          string
+	ShutdownTimeout  int
+	MaxContentLength int64
 }
 
 // Monitor 监控配置参数
@@ -202,6 +211,13 @@ type CORS struct {
 	AllowHeaders     []string
 	AllowCredentials bool
 	MaxAge           int
+}
+
+// GZIP gzip压缩
+type GZIP struct {
+	Enable             bool
+	ExcludedExtentions []string
+	ExcludedPaths      []string
 }
 
 // Redis redis配置参数

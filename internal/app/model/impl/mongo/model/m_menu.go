@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/mongo/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/mongo/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,7 +39,7 @@ func (a *Menu) Query(ctx context.Context, params schema.MenuQueryParam, opts ...
 
 	c := entity.GetMenuCollection(ctx, a.Client)
 	filter := DefaultFilter(ctx)
-	if v := params.RecordIDs; len(v) > 0 {
+	if v := params.IDs; len(v) > 0 {
 		filter = append(filter, Filter("_id", bson.M{"$in": v}))
 	}
 	if v := params.Name; v != "" {
@@ -79,9 +79,9 @@ func (a *Menu) Query(ctx context.Context, params schema.MenuQueryParam, opts ...
 }
 
 // Get 查询指定数据
-func (a *Menu) Get(ctx context.Context, recordID string, opts ...schema.MenuQueryOptions) (*schema.Menu, error) {
+func (a *Menu) Get(ctx context.Context, id string, opts ...schema.MenuQueryOptions) (*schema.Menu, error) {
 	c := entity.GetMenuCollection(ctx, a.Client)
-	filter := DefaultFilter(ctx, Filter("_id", recordID))
+	filter := DefaultFilter(ctx, Filter("_id", id))
 	var item entity.Menu
 	ok, err := FindOne(ctx, c, filter, &item)
 	if err != nil {
@@ -100,50 +100,35 @@ func (a *Menu) Create(ctx context.Context, item schema.Menu) error {
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetMenuCollection(ctx, a.Client)
 	err := Insert(ctx, c, eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(err)
 }
 
 // Update 更新数据
-func (a *Menu) Update(ctx context.Context, recordID string, item schema.Menu) error {
+func (a *Menu) Update(ctx context.Context, id string, item schema.Menu) error {
 	eitem := entity.SchemaMenu(item).ToMenu()
 	eitem.UpdatedAt = time.Now()
 	c := entity.GetMenuCollection(ctx, a.Client)
-	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)), eitem)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Update(ctx, c, DefaultFilter(ctx, Filter("_id", id)), eitem)
+	return errors.WithStack(err)
 }
 
 // Delete 删除数据
-func (a *Menu) Delete(ctx context.Context, recordID string) error {
+func (a *Menu) Delete(ctx context.Context, id string) error {
 	c := entity.GetMenuCollection(ctx, a.Client)
-	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := Delete(ctx, c, DefaultFilter(ctx, Filter("_id", id)))
+	return errors.WithStack(err)
 }
 
 // UpdateStatus 更新状态
-func (a *Menu) UpdateStatus(ctx context.Context, recordID string, status int) error {
+func (a *Menu) UpdateStatus(ctx context.Context, id string, status int) error {
 	c := entity.GetMenuCollection(ctx, a.Client)
-	err := UpdateFields(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)), bson.M{"status": status})
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := UpdateFields(ctx, c, DefaultFilter(ctx, Filter("_id", id)), bson.M{"status": status})
+	return errors.WithStack(err)
 }
 
 // UpdateParentPath 更新父级路径
-func (a *Menu) UpdateParentPath(ctx context.Context, recordID, parentPath string) error {
+func (a *Menu) UpdateParentPath(ctx context.Context, id, parentPath string) error {
 	c := entity.GetMenuCollection(ctx, a.Client)
-	err := UpdateFields(ctx, c, DefaultFilter(ctx, Filter("_id", recordID)), bson.M{"parent_path": parentPath})
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err := UpdateFields(ctx, c, DefaultFilter(ctx, Filter("_id", id)), bson.M{"parent_path": parentPath})
+	return errors.WithStack(err)
 }

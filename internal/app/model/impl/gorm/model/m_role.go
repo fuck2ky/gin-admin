@@ -3,10 +3,10 @@ package model
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/model"
-	"github.com/LyricTian/gin-admin/internal/app/model/impl/gorm/entity"
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/errors"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model"
+	"github.com/LyricTian/gin-admin/v6/internal/app/model/impl/gorm/entity"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/errors"
 	"github.com/google/wire"
 	"github.com/jinzhu/gorm"
 )
@@ -34,8 +34,8 @@ func (a *Role) Query(ctx context.Context, params schema.RoleQueryParam, opts ...
 	opt := a.getQueryOption(opts...)
 
 	db := entity.GetRoleDB(ctx, a.DB)
-	if v := params.RecordIDs; len(v) > 0 {
-		db = db.Where("record_id IN(?)", v)
+	if v := params.IDs; len(v) > 0 {
+		db = db.Where("id IN (?)", v)
 	}
 	if v := params.Name; v != "" {
 		db = db.Where("name=?", v)
@@ -45,7 +45,7 @@ func (a *Role) Query(ctx context.Context, params schema.RoleQueryParam, opts ...
 			Where("deleted_at is null").
 			Where("user_id=?", v).
 			Select("role_id").SubQuery()
-		db = db.Where("record_id IN ?", subQuery)
+		db = db.Where("id IN ?", subQuery)
 	}
 	if v := params.QueryValue; v != "" {
 		v = "%" + v + "%"
@@ -69,9 +69,9 @@ func (a *Role) Query(ctx context.Context, params schema.RoleQueryParam, opts ...
 }
 
 // Get 查询指定数据
-func (a *Role) Get(ctx context.Context, recordID string, opts ...schema.RoleQueryOptions) (*schema.Role, error) {
+func (a *Role) Get(ctx context.Context, id string, opts ...schema.RoleQueryOptions) (*schema.Role, error) {
 	var role entity.Role
-	ok, err := FindOne(ctx, entity.GetRoleDB(ctx, a.DB).Where("record_id=?", recordID), &role)
+	ok, err := FindOne(ctx, entity.GetRoleDB(ctx, a.DB).Where("id=?", id), &role)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	} else if !ok {
@@ -85,36 +85,24 @@ func (a *Role) Get(ctx context.Context, recordID string, opts ...schema.RoleQuer
 func (a *Role) Create(ctx context.Context, item schema.Role) error {
 	eitem := entity.SchemaRole(item).ToRole()
 	result := entity.GetRoleDB(ctx, a.DB).Create(eitem)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	return errors.WithStack(result.Error)
 }
 
 // Update 更新数据
-func (a *Role) Update(ctx context.Context, recordID string, item schema.Role) error {
+func (a *Role) Update(ctx context.Context, id string, item schema.Role) error {
 	eitem := entity.SchemaRole(item).ToRole()
-	result := entity.GetRoleDB(ctx, a.DB).Where("record_id=?", recordID).Updates(eitem)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	result := entity.GetRoleDB(ctx, a.DB).Where("id=?", id).Updates(eitem)
+	return errors.WithStack(result.Error)
 }
 
 // Delete 删除数据
-func (a *Role) Delete(ctx context.Context, recordID string) error {
-	result := entity.GetRoleDB(ctx, a.DB).Where("record_id=?", recordID).Delete(entity.Role{})
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+func (a *Role) Delete(ctx context.Context, id string) error {
+	result := entity.GetRoleDB(ctx, a.DB).Where("id=?", id).Delete(entity.Role{})
+	return errors.WithStack(result.Error)
 }
 
 // UpdateStatus 更新状态
-func (a *Role) UpdateStatus(ctx context.Context, recordID string, status int) error {
-	result := entity.GetRoleDB(ctx, a.DB).Where("record_id=?", recordID).Update("status", status)
-	if err := result.Error; err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+func (a *Role) UpdateStatus(ctx context.Context, id string, status int) error {
+	result := entity.GetRoleDB(ctx, a.DB).Where("id=?", id).Update("status", status)
+	return errors.WithStack(result.Error)
 }

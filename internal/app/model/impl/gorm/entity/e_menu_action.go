@@ -3,14 +3,14 @@ package entity
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/jinzhu/gorm"
 )
 
 // GetMenuActionDB 菜单动作
 func GetMenuActionDB(ctx context.Context, defDB *gorm.DB) *gorm.DB {
-	return getDBWithModel(ctx, defDB, new(MenuAction))
+	return GetDBWithModel(ctx, defDB, new(MenuAction))
 }
 
 // SchemaMenuAction 菜单动作
@@ -29,15 +29,6 @@ type MenuAction struct {
 	MenuID string `gorm:"column:menu_id;size:36;index;default:'';not null;"` // 菜单ID
 	Code   string `gorm:"column:code;size:100;default:'';not null;"`         // 动作编号
 	Name   string `gorm:"column:name;size:100;default:'';not null;"`         // 动作名称
-}
-
-func (a MenuAction) String() string {
-	return toString(a)
-}
-
-// TableName 表名
-func (a MenuAction) TableName() string {
-	return a.Model.TableName("menu_action")
 }
 
 // ToSchemaMenuAction 转换为菜单动作对象

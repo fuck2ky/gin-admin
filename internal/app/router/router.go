@@ -1,9 +1,8 @@
 package router
 
 import (
-	"github.com/LyricTian/gin-admin/internal/app/api"
-	"github.com/LyricTian/gin-admin/internal/app/api/mock"
-	"github.com/LyricTian/gin-admin/pkg/auth"
+	"github.com/LyricTian/gin-admin/v6/internal/app/api"
+	"github.com/LyricTian/gin-admin/v6/pkg/auth"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
@@ -25,15 +24,10 @@ type Router struct {
 	Auth           auth.Auther
 	CasbinEnforcer *casbin.SyncedEnforcer
 	DemoAPI        *api.Demo
-	DemoMock       *mock.Demo
 	LoginAPI       *api.Login
-	LoginMock      *mock.Login
 	MenuAPI        *api.Menu
-	MenuMock       *mock.Menu
 	RoleAPI        *api.Role
-	RoleMock       *mock.Role
 	UserAPI        *api.User
-	UserMock       *mock.User
 }
 
 // Register 注册路由

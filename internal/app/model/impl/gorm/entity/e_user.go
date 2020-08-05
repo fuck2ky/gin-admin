@@ -3,14 +3,14 @@ package entity
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"github.com/jinzhu/gorm"
 )
 
 // GetUserDB 获取用户存储
 func GetUserDB(ctx context.Context, defDB *gorm.DB) *gorm.DB {
-	return getDBWithModel(ctx, defDB, new(User))
+	return GetDBWithModel(ctx, defDB, new(User))
 }
 
 // SchemaUser 用户对象
@@ -33,15 +33,6 @@ type User struct {
 	Phone    *string `gorm:"column:phone;size:20;index;"`                         // 手机号
 	Status   int     `gorm:"column:status;index;default:0;not null;"`             // 状态(1:启用 2:停用)
 	Creator  string  `gorm:"column:creator;size:36;"`                             // 创建者
-}
-
-func (a User) String() string {
-	return toString(a)
-}
-
-// TableName 表名
-func (a User) TableName() string {
-	return a.Model.TableName("user")
 }
 
 // ToSchemaUser 转换为用户对象

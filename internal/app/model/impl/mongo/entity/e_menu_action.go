@@ -3,15 +3,15 @@ package entity
 import (
 	"context"
 
-	"github.com/LyricTian/gin-admin/internal/app/schema"
-	"github.com/LyricTian/gin-admin/pkg/util"
+	"github.com/LyricTian/gin-admin/v6/internal/app/schema"
+	"github.com/LyricTian/gin-admin/v6/pkg/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // GetMenuActionCollection 获取MenuAction存储
 func GetMenuActionCollection(ctx context.Context, cli *mongo.Client) *mongo.Collection {
-	return getCollection(ctx, cli, MenuAction{})
+	return GetCollection(ctx, cli, MenuAction{})
 }
 
 // SchemaMenuAction 菜单动作
@@ -30,10 +30,6 @@ type MenuAction struct {
 	MenuID string `bson:"menu_id"` // 菜单ID
 	Code   string `bson:"code"`    // 动作编号
 	Name   string `bson:"name"`    // 动作名称
-}
-
-func (a MenuAction) String() string {
-	return toString(a)
 }
 
 // CollectionName 集合名
